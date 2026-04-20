@@ -1,43 +1,61 @@
-
 import streamlit as st
 import pandas as pd
 import joblib
-import numpy as np
 
-# Load the trained model
+# Load model
 model = joblib.load('linear_regression_model.pkl')
 
-st.title('Salary Prediction App')
-st.write('Enter the details below to predict the salary.')
+# Load dataset
+df = pd.read_csv('Salary_Dataset_DataScienceLovers.csv')
 
-# Input features from the user
-# Note: For 'Company Name', 'Job Title', 'Location', 'Employment Status', 'Job Roles',
-# the model expects the LabelEncoded integer values. In a real application, you would
-# either provide dropdowns with original categories and map them to encoded values,
-# or load the LabelEncoders used during training.
+st.title('💼 Salary Prediction App')
 
-rating = st.slider('Rating', min_value=0.0, max_value=5.0, value=3.5, step=0.1)
-company_name = st.number_input('Company Name (Encoded Integer)', min_value=0, value=5000)
-job_title = st.number_input('Job Title (Encoded Integer)', min_value=0, value=50)
-salaries_reported = st.number_input('Salaries Reported', min_value=0, value=1)
-location = st.number_input('Location (Encoded Integer)', min_value=0, value=5)
-employment_status = st.number_input('Employment Status (Encoded Integer)', min_value=0, value=1)
-job_roles = st.number_input('Job Roles (Encoded Integer)', min_value=0, value=10)
+# Dynamic categories from dataset
+company_list = sorted(df['Company Name'].unique())
+job_title_list = sorted(df['Job Title'].unique())
+location_list = sorted(df['Location'].unique())
+employment_list = sorted(df['Employment Status'].unique())
+job_roles_list = sorted(df['Job Roles'].unique())
 
+# Inputs
+rating = st.slider('Rating', 0.0, 5.0, 3.5)
 
+company = st.selectbox('Company Name', company_list)
+job_title = st.selectbox('Job Title', job_title_list)
+location = st.selectbox('Location', location_list)
+employment_status = st.selectbox('Employment Status', employment_list)
+job_roles = st.selectbox('Job Roles', job_roles_list)
+
+salaries_reported = st.number_input('Salaries Reported', min_value=1, value=1)
+
+# ⚠️ Encoding (simple method)
+from sklearn.preprocessing import LabelEncoder
+
+le_company = LabelEncoder()
+le_job = LabelEncoder()
+le_loc = LabelEncoder()
+le_emp = LabelEncoder()
+le_role = LabelEncoder()
+
+df['Company Name'] = le_company.fit_transform(df['Company Name'])
+df['Job Title'] = le_job.fit_transform(df['Job Title'])
+df['Location'] = le_loc.fit_transform(df['Location'])
+df['Employment Status'] = le_emp.fit_transform(df['Employment Status'])
+df['Job Roles'] = le_role.fit_transform(df['Job Roles'])
+
+# Predict
 if st.button('Predict Salary'):
-    # Create a DataFrame from user inputs
+
     input_data = pd.DataFrame([{
         'Rating': rating,
-        'Company Name': company_name,
-        'Job Title': job_title,
+        'Company Name': le_company.transform([company])[0],
+        'Job Title': le_job.transform([job_title])[0],
         'Salaries Reported': salaries_reported,
-        'Location': location,
-        'Employment Status': employment_status,
-        'Job Roles': job_roles
+        'Location': le_loc.transform([location])[0],
+        'Employment Status': le_emp.transform([employment_status])[0],
+        'Job Roles': le_role.transform([job_roles])[0]
     }])
 
-    # Make prediction
     prediction = model.predict(input_data)[0]
 
-    st.success(f'Predicted Salary: {prediction:,.2f} INR')
+    st.success(f'💰 Predicted Salary: {prediction:,.2f} INR')
