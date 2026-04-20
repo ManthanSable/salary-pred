@@ -11,7 +11,7 @@ df = pd.read_csv('Salary_Dataset_DataScienceLovers.csv')
 st.title('💼 Salary Prediction App')
 
 # Dynamic categories from dataset
-company_list = sorted(df['Company_Name'].unique())
+company_list = sorted(df['CompanyName'].unique())
 job_title_list = sorted(df['Job Title'].unique())
 location_list = sorted(df['Location'].unique())
 employment_list = sorted(df['Employment Status'].unique())
