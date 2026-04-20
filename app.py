@@ -43,3 +43,14 @@ if st.button("Predict"):
 
     pred = model.predict(input_data)[0]
     st.success(f"💰 Predicted Salary: {pred:,.2f} INR")
+    # ---------------- RIGHT SIDE ---------------- #
+with col2:
+    st.subheader("📜 Prediction History")
+
+    if st.session_state.history:
+        for i, item in enumerate(reversed(st.session_state.history), 1):
+            st.write(f"**{i}. {item['Company']} - {item['Job']}**")
+            st.write(f"💰 {item['Salary']}")
+            st.markdown("---")
+    else:
+        st.write("No predictions yet")
