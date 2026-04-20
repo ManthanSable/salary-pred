@@ -1,83 +1,54 @@
 import streamlit as st
 import pandas as pd
 import joblib
-from sklearn.preprocessing import LabelEncoder
 import numpy as np
 
-# --- 1. Load the trained model ---
+# Load model and encoders
 model = joblib.load('linear_regression_model.pkl')
 
-# --- 2. Load the original dataset to reconstruct encoders ---
-try:
-    original_df = pd.read_csv('Salary_Dataset_DataScienceLovers.csv')
-except FileNotFoundError:
-    st.error("Error: 'Salary_Dataset_DataScienceLovers.csv' not found. Please ensure it's in the same directory as app.py.")
-    st.stop()
+# Load encoders (you must save these during training)
+company_encoder = joblib.load('company_encoder.pkl')
+job_title_encoder = joblib.load('job_title_encoder.pkl')
+location_encoder = joblib.load('location_encoder.pkl')
+employment_encoder = joblib.load('employment_encoder.pkl')
+job_roles_encoder = joblib.load('job_roles_encoder.pkl')
 
-# --- 3. Apply the same preprocessing steps as during training and create individual LabelEncoders ---
-# Handle null values for object type columns (specifically 'Company Name')
-for column in original_df.columns:
-    if original_df[column].dtype == 'object':
-        original_df[column] = original_df[column].fillna(original_df[column].mode()[0])
+st.title('💼 Salary Prediction App')
+st.write('Select the details below to predict the salary.')
 
-# Create separate LabelEncoder instances for each categorical column
-le_company_name = LabelEncoder()
-le_job_title = LabelEncoder()
-le_location = LabelEncoder()
-le_employment_status = LabelEncoder()
-le_job_roles = LabelEncoder()
+# User Inputs (Categorical)
+rating = st.slider('Rating', 0.0, 5.0, 3.5)
 
-# Ensure columns are string type and fit encoders
-original_df['Company Name'] = original_df['Company Name'].astype(str)
-le_company_name.fit(original_df['Company Name'])
+company = st.selectbox('Company Name', company_encoder.classes_)
+job_title = st.selectbox('Job Title', job_title_encoder.classes_)
+location = st.selectbox('Location', location_encoder.classes_)
+employment_status = st.selectbox('Employment Status', employment_encoder.classes_)
+job_roles = st.selectbox('Job Roles', job_roles_encoder.classes_)
 
-original_df['Job Title'] = original_df['Job Title'].astype(str)
-le_job_title.fit(original_df['Job Title'])
+salaries_reported = st.number_input('Salaries Reported', min_value=1, value=1)
 
-original_df['Location'] = original_df['Location'].astype(str)
-le_location.fit(original_df['Location'])
-
-original_df['Employment Status'] = original_df['Employment Status'].astype(str)
-le_employment_status.fit(original_df['Employment Status'])
-
-original_df['Job Roles'] = original_df['Job Roles'].astype(str)
-le_job_roles.fit(original_df['Job Roles'])
-
-st.title('Salary Prediction App')
-st.write('Enter the details below to predict the salary.')
-
-# --- 4. Input features from the user using dropdowns for categorical data ---
-rating = st.slider('Rating', min_value=0.0, max_value=5.0, value=3.5, step=0.1)
-
-# For categorical features, use selectbox and map back to encoded integers
-selected_company_name = st.selectbox('Company Name', sorted(le_company_name.classes_))
-selected_job_title = st.selectbox('Job Title', sorted(le_job_title.classes_))
-selected_location = st.selectbox('Location', sorted(le_location.classes_))
-selected_employment_status = st.selectbox('Employment Status', sorted(le_employment_status.classes_))
-selected_job_roles = st.selectbox('Job Roles', sorted(le_job_roles.classes_))
-
-salaries_reported = st.number_input('Salaries Reported', min_value=0, value=1)
-
+# Prediction
 if st.button('Predict Salary'):
-    # Encode selected categorical values
-    encoded_company_name = le_company_name.transform([selected_company_name])[0]
-    encoded_job_title = le_job_title.transform([selected_job_title])[0]
-    encoded_location = le_location.transform([selected_location])[0]
-    encoded_employment_status = le_employment_status.transform([selected_employment_status])[0]
-    encoded_job_roles = le_job_roles.transform([selected_job_roles])[0]
+    
+    # Encode categorical values
+    company_encoded = company_encoder.transform([company])[0]
+    job_title_encoded = job_title_encoder.transform([job_title])[0]
+    location_encoded = location_encoder.transform([location])[0]
+    employment_encoded = employment_encoder.transform([employment_status])[0]
+    job_roles_encoded = job_roles_encoder.transform([job_roles])[0]
 
-    # Create a DataFrame from user inputs (using encoded values for categorical features)
+    # Create DataFrame
     input_data = pd.DataFrame([{
         'Rating': rating,
-        'Company Name': encoded_company_name,
-        'Job Title': encoded_job_title,
+        'Company Name': company_encoded,
+        'Job Title': job_title_encoded,
         'Salaries Reported': salaries_reported,
-        'Location': encoded_location,
-        'Employment Status': encoded_employment_status,
-        'Job Roles': encoded_job_roles
+        'Location': location_encoded,
+        'Employment Status': employment_encoded,
+        'Job Roles': job_roles_encoded
     }])
 
-    # Make prediction
+    # Prediction
     prediction = model.predict(input_data)[0]
 
-    st.success(f'Predicted Salary: {prediction:,.2f} INR')
+    st.success(f'💰 Predicted Salary: {prediction:,.2f} INR')
